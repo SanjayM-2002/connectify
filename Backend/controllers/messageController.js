@@ -12,6 +12,7 @@ import { getRecipientId, io } from '../socket/socket.js';
 const sendMessage = async (req, res) => {
   try {
     const { recipientId, message } = req.body;
+    let { img } = req.body;
     const senderId = req.user._id;
 
     const recipient = await User.findById(recipientId);
@@ -19,7 +20,7 @@ const sendMessage = async (req, res) => {
       return res.status(401).json({ error: 'Invalid user' });
     }
 
-    if (!message) {
+    if (!message && !img) {
       return res.status(400).json({ error: 'Message cannot be empty' });
     }
 
@@ -52,10 +53,16 @@ const sendMessage = async (req, res) => {
       await conversation.save();
     }
 
+    if (img) {
+      const uploadedResponse = await cloudinary.uploader.upload(img);
+      img = uploadedResponse.secure_url;
+    }
+
     const newMessage = new Message({
       conversationId: conversation._id,
       sender: senderId,
       text: message,
+      img: img || '',
     });
 
     await newMessage.save();
